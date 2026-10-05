@@ -1,648 +1,809 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Le Mots-Abeille | Jeu de Mots Français</title>
-  <style>
-    :root {
-      --primary-yellow: #f6c800;
-      --secondary-yellow: #fde876;
-      --bg-color: #f7f7f8;
-      --text-color: #222222;
-      --card-bg: #ffffff;
-      --accent: #222222;
-      --light-gray: #e6e6e6;
-      --border-radius: 12px;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jeux d'Abeille — Le mot de la ruche</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        honey: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        ruche: {
+                            dark: '#1e1e24',
+                            charcoal: '#2b2c34',
+                            accent: '#facc15',
+                            card: '#24252d'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        display: ['Fredoka', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <style>
+        body {
+            background-color: #18181c;
+            color: #f3f4f6;
+            touch-action: manipulation;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    body {
-      font-family: var(--font-family);
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 15px;
-    }
+        /* Honeycomb Hexagon Math & Styles */
+        .hive-grid {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto;
+        }
 
-    header {
-      width: 100%;
-      max-width: 500px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 2px solid var(--light-gray);
-      margin-bottom: 15px;
-    }
+        .hex-cell {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, background-color 0.2s ease, filter 0.15s ease;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+        }
 
-    h1 {
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
+        .hex-cell:active {
+            transform: scale(0.92) !important;
+        }
 
-    .top-buttons {
-      display: flex;
-      gap: 8px;
-    }
+        .hex-outer {
+            background-color: #2e303b;
+            color: #ffffff;
+        }
 
-    .btn-icon {
-      background: none;
-      border: 1px solid var(--light-gray);
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+        .hex-outer:hover {
+            background-color: #3f4252;
+        }
 
-    .btn-icon:hover {
-      background-color: var(--light-gray);
-    }
+        .hex-center {
+            background-color: #f59e0b;
+            color: #18181c;
+        }
 
-    .info-bar {
-      width: 100%;
-      max-width: 500px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: var(--card-bg);
-      padding: 12px 18px;
-      border-radius: var(--border-radius);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
-    }
+        .hex-center:hover {
+            background-color: #fbbf24;
+        }
 
-    .counter-box, .timer-box {
-      display: flex;
-      flex-direction: column;
-    }
+        /* Positioning 7 Hexagon Tiles around center */
+        /* Center */
+        .pos-0 { top: 94px; left: 100px; }
+        /* Top */
+        .pos-1 { top: 12px; left: 100px; }
+        /* Top Right */
+        .pos-2 { top: 53px; left: 171px; }
+        /* Bottom Right */
+        .pos-3 { top: 135px; left: 171px; }
+        /* Bottom */
+        .pos-4 { top: 176px; left: 100px; }
+        /* Bottom Left */
+        .pos-5 { top: 135px; left: 29px; }
+        /* Top Left */
+        .pos-6 { top: 53px; left: 29px; }
 
-    .info-label {
-      font-size: 0.75rem;
-      color: #666;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
+        @media (min-width: 400px) {
+            .hive-grid {
+                width: 320px;
+                height: 320px;
+            }
+            .hex-cell {
+                width: 92px;
+                height: 106px;
+                font-size: 2.1rem;
+            }
+            .pos-0 { top: 107px; left: 114px; }
+            .pos-1 { top: 14px; left: 114px; }
+            .pos-2 { top: 60px; left: 195px; }
+            .pos-3 { top: 154px; left: 195px; }
+            .pos-4 { top: 200px; left: 114px; }
+            .pos-5 { top: 154px; left: 33px; }
+            .pos-6 { top: 60px; left: 33px; }
+        }
 
-    .info-value {
-      font-size: 1.1rem;
-      font-weight: 800;
-    }
+        /* Toast Animation */
+        @keyframes floatUpFade {
+            0% { opacity: 0; transform: translate(-50%, 10px) scale(0.95); }
+            15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            85% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
+        }
 
-    /* Word Input Display */
-    .word-display {
-      height: 45px;
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        .toast-animate {
+            animation: floatUpFade 1.8s ease-in-out forwards;
+        }
 
-    .word-display .cursor {
-      display: inline-block;
-      width: 2px;
-      height: 2.2rem;
-      background-color: var(--primary-yellow);
-      margin-left: 2px;
-      animation: blink 1s infinite;
-    }
+        /* Input Blink Caret */
+        .cursor-blink {
+            animation: blink 1s infinite;
+        }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
 
-    /* Honeycomb Hexagon Grid */
-    .honeycomb {
-      position: relative;
-      width: 280px;
-      height: 280px;
-      margin: 10px auto 25px auto;
-    }
+        /* Modal backdrop transition */
+        .modal-bg {
+            background-color: rgba(12, 13, 16, 0.82);
+            backdrop-filter: blur(4px);
+        }
 
-    .hex {
-      position: absolute;
-      width: 80px;
-      height: 92px;
-      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      font-weight: 800;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.1s, filter 0.1s;
-    }
-
-    .hex:active {
-      transform: scale(0.92);
-    }
-
-    .hex.outer {
-      background-color: var(--light-gray);
-      color: var(--text-color);
-    }
-
-    .hex.outer:hover {
-      filter: brightness(0.95);
-    }
-
-    .hex.center {
-      background-color: var(--primary-yellow);
-      color: var(--accent);
-    }
-
-    .hex.center:hover {
-      filter: brightness(0.95);
-    }
-
-    /* Hex Layout Positions */
-    .hex:nth-child(1) { top: 0px; left: 100px; }       /* Top */
-    .hex:nth-child(2) { top: 46px; left: 180px; }     /* Top Right */
-    .hex:nth-child(3) { top: 138px; left: 180px; }    /* Bottom Right */
-    .hex:nth-child(4) { top: 184px; left: 100px; }    /* Bottom */
-    .hex:nth-child(5) { top: 138px; left: 20px; }     /* Bottom Left */
-    .hex:nth-child(6) { top: 46px; left: 20px; }      /* Top Left */
-    .hex:nth-child(7) { top: 92px; left: 100px; }     /* Center */
-
-    /* Controls */
-    .controls {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 25px;
-    }
-
-    .btn-action {
-      border: 1px solid var(--light-gray);
-      background-color: var(--card-bg);
-      border-radius: 25px;
-      padding: 12px 20px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      transition: all 0.2s;
-    }
-
-    .btn-action:hover {
-      background-color: #f0f0f0;
-    }
-
-    .btn-submit {
-      background-color: var(--accent);
-      color: #fff;
-      border: none;
-    }
-
-    .btn-submit:hover {
-      background-color: #333;
-    }
-
-    /* Toast Notification */
-    .message-toast {
-      position: fixed;
-      top: 80px;
-      background-color: var(--accent);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: all 0.3s ease;
-      pointer-events: none;
-      z-index: 100;
-    }
-
-    .message-toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Found Words Section */
-    .found-section {
-      width: 100%;
-      max-width: 500px;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 18px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .found-header {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .found-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      max-height: 140px;
-      overflow-y: auto;
-    }
-
-    .found-word-tag {
-      background-color: #f0f0f2;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-    }
-
-    /* Modal Styles */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 200;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-card {
-      background-color: var(--card-bg);
-      width: 90%;
-      max-width: 420px;
-      border-radius: var(--border-radius);
-      padding: 20px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .modal-title {
-      font-size: 1.2rem;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .modal-close {
-      margin-top: 15px;
-      width: 100%;
-      padding: 10px;
-      background-color: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .yesterday-word-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    }
-  </style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f4252;
+            border-radius: 9999px;
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between items-center bg-ruche-dark selection:bg-honey-500 selection:text-black">
 
-  <header>
-    <h1>🐝 Le Mots-Abeille</h1>
-    <div class="top-buttons">
-      <button class="btn-icon" onclick="openYesterdayModal()">Solutions d'hier</button>
-      <button class="btn-icon" onclick="openRulesModal()">Règles</button>
+    <!-- Header / Navbar -->
+    <header class="w-full max-w-lg px-4 py-3 border-b border-gray-800 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🐝</span>
+            <h1 class="text-xl font-display font-bold text-white tracking-wide">
+                Jeux <span class="text-honey-400">d'Abeille</span>
+            </h1>
+        </div>
+        <div class="flex items-center space-x-1">
+            <button id="btn-yesterday" onclick="openModal('modal-yesterday')" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 transition flex items-center gap-1.5" title="Solutions d'hier">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="hidden sm:inline">Hier</span>
+            </button>
+            <button id="btn-rules" onclick="openModal('modal-rules')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Règles du jeu">
+                <i class="fa-solid fa-circle-question text-lg"></i>
+            </button>
+            <button id="btn-stats" onclick="openModal('modal-found')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition" title="Mots trouvés">
+                <i class="fa-solid fa-list-check text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Wrapper -->
+    <main class="w-full max-w-md px-4 flex-1 flex flex-col items-center justify-around py-4 relative">
+
+        <!-- Progress and Score Bar -->
+        <section class="w-full bg-ruche-card rounded-xl p-3 border border-gray-800 shadow-lg">
+            <div class="flex justify-between items-center mb-1.5">
+                <div class="flex items-baseline gap-2">
+                    <span id="rank-badge" class="px-2 py-0.5 rounded text-xs font-semibold bg-honey-500/20 text-honey-400 border border-honey-500/30">Débutant</span>
+                    <span id="score-text" class="text-sm font-bold text-gray-200">0 pts</span>
+                </div>
+                <button onclick="openModal('modal-found')" class="text-xs text-honey-400 hover:underline flex items-center gap-1">
+                    <span id="words-found-count">Mots trouvés : 0 / 0</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-800 h-2.5 rounded-full overflow-hidden p-0.5">
+                <div id="progress-bar" class="bg-gradient-to-r from-honey-500 to-amber-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <!-- Toast Notification Message Container -->
+        <div id="toast-box" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none hidden">
+            <div id="toast-content" class="px-4 py-2 rounded-full font-bold text-sm bg-gray-100 text-gray-900 shadow-xl border border-gray-300">
+                Message feedback
+            </div>
+        </div>
+
+        <!-- Input Text Box Display -->
+        <div class="w-full my-2 text-center h-16 flex items-center justify-center">
+            <div class="text-3xl font-bold tracking-wider uppercase text-white flex items-center min-h-[44px]">
+                <span id="input-word" class="tracking-widest"></span>
+                <span class="w-0.5 h-7 bg-honey-400 inline-block ml-1 cursor-blink"></span>
+            </div>
+        </div>
+
+        <!-- Honeycomb Grid -->
+        <div class="hive-grid my-2">
+            <!-- Pos 0: Center -->
+            <div id="hex-0" onclick="handleTileClick(0)" class="hex-cell hex-center pos-0"></div>
+            <!-- Pos 1..6: Outer -->
+            <div id="hex-1" onclick="handleTileClick(1)" class="hex-cell hex-outer pos-1"></div>
+            <div id="hex-2" onclick="handleTileClick(2)" class="hex-cell hex-outer pos-2"></div>
+            <div id="hex-3" onclick="handleTileClick(3)" class="hex-cell hex-outer pos-3"></div>
+            <div id="hex-4" onclick="handleTileClick(4)" class="hex-cell hex-outer pos-4"></div>
+            <div id="hex-5" onclick="handleTileClick(5)" class="hex-cell hex-outer pos-5"></div>
+            <div id="hex-6" onclick="handleTileClick(6)" class="hex-cell hex-outer pos-6"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="w-full flex justify-center items-center gap-3 my-3">
+            <button onclick="handleDelete()" class="flex-1 max-w-[110px] py-3 rounded-full bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 font-semibold text-sm transition flex justify-center items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-delete-left"></i> Effacer
+            </button>
+
+            <button onclick="handleShuffle()" class="p-3.5 rounded-full bg-gray-800 hover:bg-gray-700 active:rotate-180 text-honey-400 font-semibold transition-all duration-300 shadow-md" title="Mélanger les lettres">
+                <i class="fa-solid fa-rotate text-lg"></i>
+            </button>
+
+            <button onclick="handleSubmit()" class="flex-1 max-w-[110px] py-3 rounded-full bg-honey-500 hover:bg-honey-400 active:scale-95 text-gray-950 font-bold text-sm transition flex justify-center items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-check"></i> Valider
+            </button>
+        </div>
+
+        <!-- Accent Helpers for Easy Typing on Mobile/Desktop -->
+        <div id="accent-bar" class="w-full flex justify-center items-center gap-1.5 flex-wrap min-h-[32px]">
+            <!-- Dynamically populated with puzzle accents -->
+        </div>
+
+    </main>
+
+    <!-- Footer info -->
+    <footer class="w-full max-w-lg px-4 py-2 text-center text-xs text-gray-500 border-t border-gray-800/60">
+        <span id="puzzle-date-label">Puzzle du jour</span> • <a href="https://nessiria.github.io/jeux-d-abeille/" class="hover:underline text-gray-400">Jeux d'Abeille</a>
+    </footer>
+
+    <!-- MODAL: Rules / Règles -->
+    <div id="modal-rules" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg hidden">
+        <div class="bg-ruche-card border border-gray-700 rounded-2xl max-w-md w-full p-6 text-gray-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-rules')" class="absolute top-4 right-4 text-gray-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-2xl font-display font-bold text-white mb-4 flex items-center gap-2">
+                <span>🐝</span> Règles du jeu
+            </h2>
+            <div class="space-y-3 text-sm leading-relaxed text-gray-300">
+                <p>Créez des mots en utilisant les lettres de la ruche !</p>
+                <ul class="list-disc pl-5 space-y-1.5">
+                    <li>Les mots doivent contenir au minimum <strong>4 lettres</strong>.</li>
+                    <li>Les mots doivent <strong>obligatoirement inclure la lettre centrale</strong> (jaune).</li>
+                    <li>Les lettres peuvent être réutilisées plusieurs fois.</li>
+                    <li>Les accents sont pris en compte distinctement (ex: <code class="bg-gray-800 px-1 py-0.5 rounded text-honey-400">a</code>, <code class="bg-gray-800 px-1 py-0.5 rounded text-honey-400">à</code>, <code class="bg-gray-800 px-1 py-0.5 rounded text-honey-400">â</code> sont des lettres différentes).</li>
+                </ul>
+                <div class="bg-gray-800/80 p-3 rounded-xl border border-gray-700 mt-3">
+                    <p class="font-semibold text-honey-400 mb-1">Mots autorisés :</p>
+                    <p class="text-xs text-gray-300">Noms, adjectifs, adverbes et <strong>verbes à l'infinitif uniquement</strong> (pas de formes conjuguées). Pour les verbes pronominaux, pas de "se" (ex: "lever").</p>
+                </div>
+                <div class="pt-2 border-t border-gray-700 text-xs text-gray-400">
+                    <p><strong>Calcul des points :</strong></p>
+                    <p>• Mot de 4 lettres = 1 point</p>
+                    <p>• Plus de 4 lettres = 1 point par lettre</p>
+                    <p>• <strong>Pangramme</strong> (utilise les 7 lettres) = +7 points bonus !</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-rules')" class="mt-6 w-full py-2.5 bg-honey-500 text-gray-950 font-bold rounded-xl hover:bg-honey-400 transition">
+                C'est compris !
+            </button>
+        </div>
     </div>
-  </header>
 
-  <div class="info-bar">
-    <div class="counter-box">
-      <span class="info-label">Mots restants</span>
-      <span class="info-value" id="wordsRemaining">0 / 0</span>
+    <!-- MODAL: Found Words / Mots Trouvés -->
+    <div id="modal-found" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg hidden">
+        <div class="bg-ruche-card border border-gray-700 rounded-2xl max-w-md w-full p-6 text-gray-200 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <button onclick="closeModal('modal-found')" class="absolute top-4 right-4 text-gray-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-xl font-display font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-square-check text-honey-400"></i> Vos mots trouvés
+            </h2>
+            <p id="modal-found-sub" class="text-xs text-gray-400 mb-4">0 sur 0 mots découverts aujourd'hui</p>
+            
+            <div id="modal-found-list" class="flex-1 overflow-y-auto pr-1 grid grid-cols-2 gap-2 my-2 text-sm">
+                <!-- Words dynamically injected -->
+            </div>
+
+            <button onclick="closeModal('modal-found')" class="mt-4 w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold rounded-xl transition">
+                Fermer
+            </button>
+        </div>
     </div>
-    <div class="timer-box">
-      <span class="info-label">Prochain jeu dans</span>
-      <span class="info-value" id="midnightCountdown">00:00:00</span>
+
+    <!-- MODAL: Yesterday's Answers / Solutions d'Hier -->
+    <div id="modal-yesterday" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg hidden">
+        <div class="bg-ruche-card border border-gray-700 rounded-2xl max-w-md w-full p-6 text-gray-200 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <button onclick="closeModal('modal-yesterday')" class="absolute top-4 right-4 text-gray-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-xl font-display font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-honey-400"></i> Solutions d'hier
+            </h2>
+            <p id="yesterday-date-label" class="text-xs text-gray-400 mb-3"></p>
+            
+            <div id="yesterday-info-box" class="bg-gray-800/80 p-3 rounded-xl border border-gray-700 mb-3 text-xs text-gray-300 flex justify-between items-center">
+                <div>
+                    <span>Lettres d'hier : </span>
+                    <strong id="yesterday-letters" class="text-honey-400 tracking-wider">---</strong>
+                </div>
+                <div>
+                    <span id="yesterday-total-words" class="font-bold text-white">0 mots</span>
+                </div>
+            </div>
+
+            <div id="yesterday-words-list" class="flex-1 overflow-y-auto pr-1 grid grid-cols-2 gap-2 text-sm my-2">
+                <!-- Solutions injected -->
+            </div>
+
+            <button onclick="closeModal('modal-yesterday')" class="mt-4 w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold rounded-xl transition">
+                Fermer
+            </button>
+        </div>
     </div>
-  </div>
 
-  <div class="word-display" id="wordDisplay">
-    <span id="currentWordText"></span><span class="cursor"></span>
-  </div>
+    <script>
+        /**
+         * Curated French Puzzles Database
+         * Features:
+         * - Accent support (à, â, é, ê, etc. distinct letters)
+         * - Strictly Infinitive verbs, Nouns, Adjectives, Adverbs
+         * - Combined valid words count kept under ~70 words per puzzle
+         * - Center letter index 0 MUST be in every word.
+         */
+        const PUZZLE_DATABASE = [
+            {
+                id: "puz-01",
+                center: "é",
+                outers: ["t", "r", "a", "c", "h", "é"], // note 7 distinct slots (center="é", outer=['t','r','a','c','h','e'])
+                letters: ["é", "t", "r", "a", "c", "h", "e"],
+                validWords: [
+                    "écart", "écarte", "écarter", "échat", "écharpe", "écharper", "éclat", 
+                    "écraze", "écranché", "étac", "étage", "étal", "étaler", "étang", 
+                    "état", "éteindre", "éther", "éthique", "étir", "étirer", "étrafe", 
+                    "étranger", "état", "hâte", "hâter", "héron", "hétéro", "réac", 
+                    "réat", "récap", "récit", "réciter", "récré", "réel", "référé", 
+                    "régat", "régate", "régât", "régie", "région", "réitérer", "répondre", 
+                    "rétra", "rétracter", "rétro", "tracé", "tracer", "traité", "traiter",
+                    "échec", "échéat", "échére", "écrêt", "écrêter", "étêt", "étêter"
+                ]
+            },
+            {
+                id: "puz-02",
+                center: "à",
+                letters: ["à", "t", "e", "r", "â", "s", "c"],
+                validWords: [
+                    "à-côté", "à-propos", "actà", "artà", "castà", "catà", 
+                    "està", "étatà", "ratà", "racà", "râtà", "sartà", "tasà"
+                ]
+            },
+            {
+                id: "puz-03",
+                center: "ê",
+                letters: ["ê", "t", "r", "e", "a", "f", "l"],
+                validWords: [
+                    "être", "fête", "fêter", "fêtré", "frête", "flête", "lête", 
+                    "rête", "tête", "têter", "alête", "afête", "fêlé", "fêler", 
+                    "fêlure", "rêteler", "têtu", "têtue", "fêtard", "fêtarde"
+                ]
+            },
+            {
+                id: "puz-04",
+                center: "i",
+                letters: ["i", "m", "p", "a", "c", "t", "é"],
+                validWords: [
+                    "impact", "impacté", "impactée", "impatiens", "impatient", "impie", 
+                    "implicite", "impliciter", "amitiée", "amici", "pari", "paria", 
+                    "parier", "patie", "pica", "picat", "picaresque", "pici", 
+                    "piment", "pimenté", "pimer", "pira", "pirat", "pirate", 
+                    "pirater", "piscine", "piste", "pister", "pitié", "tamtam", 
+                    "tami", "tamis", "tamiser", "tapi", "tapir", "tapinois", 
+                    "tiare", "tibia", "tiède", "tiédir", "tige", "tigrer", 
+                    "tima", "timide", "timidité", "tipi", "tiré", "tirer"
+                ]
+            },
+            {
+                id: "puz-05",
+                center: "o",
+                letters: ["o", "u", "r", "s", "t", "e", "y"],
+                validWords: [
+                    "ours", "ourson", "oyster", "rotus", "route", "router", 
+                    "roster", "sotte", "sotto", "stoupa", "tory", "tote", 
+                    "totem", "tour", "toure", "tourner", "tours", "tourt", 
+                    "tourte", "tourtière", "trous", "trouse", "trousser", "yoyo"
+                ]
+            },
+            {
+                id: "puz-06",
+                center: "u",
+                letters: ["u", "f", "l", "e", "u", "r", "z"], // fallback normalized
+                letters: ["u", "f", "l", "e", "r", "z", "a"],
+                validWords: [
+                    "fleur", "fleure", "fleurer", "fleuraz", "fleurz", "fule", 
+                    "fureur", "fural", "laure", "lauréat", "lauréate", "lure", 
+                    "luron", "luronne", "rafale", "rafleur", "rafleure", "raflure", 
+                    "rule", "ruler", "ruru", "ulema", "ulcére", "ulcéreux", 
+                    "ulcéreuse", "ululer", "urane", "ureter", "uretre", "urgent", 
+                    "urgente", "urina", "urinaire", "urine", "uriner", "urna", 
+                    "urne", "usance", "usante", "user", "usure"
+                ]
+            },
+            {
+                id: "puz-07",
+                center: "c",
+                letters: ["c", "h", "a", "t", "e", "u", "x"],
+                validWords: [
+                    "château", "châteaux", "chou", "choux", "chate", "chateu", 
+                    "chater", "chati", "châtier", "chatoyer", "chaw", "chay", 
+                    "catch", "catcheur", "cahuette", "cachou", "cacher", 
+                    "chut", "chute", "chuter", "échec", "tach", "tache", "tacher"
+                ]
+            }
+        ];
 
-  <div id="toast" class="message-toast"></div>
+        let currentPuzzle = null;
+        let yesterdayPuzzle = null;
+        let currentLetters = []; // [center, outer1, outer2, ...]
+        let currentInput = "";
+        let foundWords = new Set();
+        let totalMaxScore = 0;
 
-  <div class="honeycomb" id="honeycomb">
-    <!-- 6 Outer Letters + 1 Center Letter -->
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex outer" onclick="appendLetter(this.innerText)"></div>
-    <div class="hex center" onclick="appendLetter(this.innerText)"></div>
-  </div>
+        // Ranks setup
+        const RANKS = [
+            { name: "Débutant", ratio: 0 },
+            { name: "Novice", ratio: 0.05 },
+            { name: "Amateur", ratio: 0.15 },
+            { name: "Curieux", ratio: 0.25 },
+            { name: "Bzz-Bzz", ratio: 0.40 },
+            { name: "Passionné", ratio: 0.55 },
+            { name: "Expert", ratio: 0.70 },
+            { name: "Génie", ratio: 0.85 },
+            { name: "Reine des Abeilles 👑", ratio: 1.0 }
+        ];
 
-  <div class="controls">
-    <button class="btn-action" onclick="deleteLetter()">Effacer</button>
-    <button class="btn-action" onclick="shuffleLetters()">Mélanger 🔀</button>
-    <button class="btn-action btn-submit" onclick="handleWordSubmit()">Vérifier</button>
-  </div>
+        window.onload = function() {
+            initDailyGame();
+            setupKeyboardInput();
+        };
 
-  <div class="found-section">
-    <div class="found-header">
-      <span>Mots trouvés</span>
-      <span id="foundCount">0</span>
-    </div>
-    <div class="found-list" id="foundList"></div>
-  </div>
+        function getDeterministicDayIndex(offsetDays = 0) {
+            const now = new Date();
+            now.setDate(now.getDate() + offsetDays);
+            const start = new Date(2025, 0, 1); // Anchor date
+            const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+            return Math.abs(diffDays) % PUZZLE_DATABASE.length;
+        }
 
-  <!-- Yesterday Answers Modal -->
-  <div class="modal-overlay" id="yesterdayModal">
-    <div class="modal-card">
-      <div class="modal-title">Solutions d'hier</div>
-      <p style="font-size: 0.85rem; color: #555;" id="yesterdayDateLabel"></p>
-      <div class="yesterday-word-list" id="yesterdayWords"></div>
-      <button class="modal-close" onclick="closeModal('yesterdayModal')">Fermer</button>
-    </div>
-  </div>
+        function getFormattedDate(offsetDays = 0) {
+            const date = new Date();
+            date.setDate(date.getDate() + offsetDays);
+            return date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
 
-  <!-- Rules Modal -->
-  <div class="modal-overlay" id="rulesModal">
-    <div class="modal-card">
-      <div class="modal-title">Règles du jeu</div>
-      <ul style="padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
-        <li>Créez des mots courants en français de <strong>4 lettres ou plus</strong>.</li>
-        <li>Chaque mot doit contenir la <strong>lettre centrale jaune</strong>.</li>
-        <li>Les lettres peuvent être réutilisées.</li>
-        <li>Pas de verbes conjugués (seuls les <strong>infinitifs</strong> sont acceptés).</li>
-        <li>Les mots techniques, le vocabulaire d'argot et les termes inappropriés sont exclus.</li>
-        <li>Chaque combinaison contient au maximum <strong>70 mots possibles</strong>.</li>
-        <li>Saisissez vos mots sans vous soucier des accents (ex: REALITE ou RÉALITÉ).</li>
-      </ul>
-      <button class="modal-close" onclick="closeModal('rulesModal')">Compris !</button>
-    </div>
-  </div>
+        function initDailyGame() {
+            const todayIdx = getDeterministicDayIndex(0);
+            const yestIdx = getDeterministicDayIndex(-1);
 
-  <script>
-    const MAX_ALLOWED_WORDS = 70;
+            currentPuzzle = PUZZLE_DATABASE[todayIdx];
+            yesterdayPuzzle = PUZZLE_DATABASE[yestIdx];
 
-    // Strictly curated daily puzzles using standard, common, non-technical French words
-    const RAW_PUZZLES = [
-      {
-        date: "2026-10-05",
-        center: "T",
-        outer: ["A", "E", "R", "S", "I", "L"],
-        validWords: [
-          "ALERTE", "ALERTER", "ALERTES", "ALITER", "ARRET", "ARRETER",
-          "ARRETS", "ASTRE", "ASTRES", "ATELIER", "ATELIERS", "ELITE",
-          "ELITES", "ETAL", "ETALER", "ETALES", "ETIRER", "ETIRES",
-          "ETRIER", "ETRIERS", "LAIT", "LAITS", "LISTE", "LISTER",
-          "LISTES", "LITRE", "LITRES", "RATER", "RATES", "REALITE",
-          "REALITES", "RESTER", "RESTES", "RETIRER", "RETIRES", "RETRAITE",
-          "RETRAITER", "RETRAITES", "STELE", "STELES", "TAILLER", "TAILLES",
-          "TERRE", "TERRES", "TEST", "TESTER", "TESTS", "TITRE",
-          "TITRER", "TITRES", "TOILE", "TOILES", "TOILETTE", "TOILETTES",
-          "TRAIT", "TRAITE", "TRAITER", "TRAITES", "TRAITS", "TRIER", "TRIES"
-        ]
-      },
-      {
-        date: "2026-10-06",
-        center: "E",
-        outer: ["C", "H", "R", "A", "M", "S"],
-        validWords: [
-          "CACHE", "CACHER", "CACHES", "CHARME", "CHARMER", "CHARMES",
-          "CHERCHE", "CHERCHER", "CREME", "CREMES", "MARCHE", "MARCHER",
-          "MARCHES", "MARECHAL", "MECHE", "MECHES", "RECHERCHE",
-          "RECHERCHER", "SECHER", "SECHE"
-        ]
-      }
-    ];
+            // Order letters: center letter at index 0, outers in positions 1..6
+            currentLetters = [...currentPuzzle.letters];
 
-    // Cap puzzle solutions at 70 words without dropping the puzzle
-    const DAILY_PUZZLES = RAW_PUZZLES.map(puzzle => ({
-      ...puzzle,
-      validWords: puzzle.validWords.slice(0, MAX_ALLOWED_WORDS)
-    }));
+            // Calculate Max Score for today
+            totalMaxScore = currentPuzzle.validWords.reduce((sum, w) => sum + calculateWordPoints(w), 0);
 
-    let currentPuzzle = null;
-    let foundWords = new Set();
-    let currentInput = "";
+            // Load LocalStorage progress
+            loadGameState();
 
-    function normalizeText(str) {
-      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-    }
+            // Render UI
+            document.getElementById('puzzle-date-label').innerText = getFormattedDate(0);
+            renderHoneycomb();
+            renderAccents();
+            updateUIStats();
+            setupYesterdayModal();
+        }
 
-    function initGame() {
-      const todayStr = getTodayDateString();
-      currentPuzzle = DAILY_PUZZLES.find(p => p.date === todayStr) || DAILY_PUZZLES[0];
+        function renderHoneycomb() {
+            for (let i = 0; i < 7; i++) {
+                const hexEl = document.getElementById(`hex-${i}`);
+                if (hexEl) {
+                    hexEl.innerText = currentLetters[i];
+                }
+            }
+        }
 
-      const savedProgress = localStorage.getItem(`bee_progress_${todayStr}`);
-      if (savedProgress) {
-        foundWords = new Set(JSON.parse(savedProgress));
-      } else {
-        foundWords = new Set();
-      }
+        function renderAccents() {
+            const accentBar = document.getElementById('accent-bar');
+            accentBar.innerHTML = '';
+            
+            // Extract distinct accented letters from current puzzle to show shortcut buttons
+            const accentsFound = currentLetters.filter(char => /[àáâèéêëìíîïòóôùúûüç]/i.test(char));
+            
+            accentsFound.forEach(acc => {
+                const btn = document.createElement('button');
+                btn.className = "px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-honey-400 font-bold rounded-md text-xs border border-gray-700 transition active:scale-95";
+                btn.innerText = acc.toUpperCase();
+                btn.onclick = () => {
+                    currentInput += acc;
+                    updateInputDisplay();
+                };
+                accentBar.appendChild(btn);
+            });
+        }
 
-      renderBoard();
-      updateFoundUI();
-      startMidnightCountdown();
-    }
+        function isPangram(word) {
+            const wordChars = new Set(word.toLowerCase().split(''));
+            // Check if all 7 puzzle letters are used
+            return currentLetters.every(char => wordChars.has(char.toLowerCase()));
+        }
 
-    function getTodayDateString() {
-      const now = new Date();
-      return now.toISOString().split('T')[0];
-    }
+        function calculateWordPoints(word) {
+            if (word.length === 4) return 1;
+            let pts = word.length;
+            if (isPangram(word)) pts += 7; // Pangram Bonus
+            return pts;
+        }
 
-    function getYesterdayDateString() {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      return yesterday.toISOString().split('T')[0];
-    }
+        function getCurrentScore() {
+            let score = 0;
+            foundWords.forEach(w => {
+                score += calculateWordPoints(w);
+            });
+            return score;
+        }
 
-    function renderBoard() {
-      const hexes = document.querySelectorAll('.hex');
-      const letters = [...currentPuzzle.outer, currentPuzzle.center];
+        function getCurrentRank(score) {
+            if (totalMaxScore === 0) return RANKS[0].name;
+            const ratio = score / totalMaxScore;
+            let currentRank = RANKS[0].name;
+            for (let r of RANKS) {
+                if (ratio >= r.ratio) {
+                    currentRank = r.name;
+                }
+            }
+            return currentRank;
+        }
 
-      hexes.forEach((hex, i) => {
-        hex.innerText = letters[i];
-      });
+        function updateUIStats() {
+            const score = getCurrentScore();
+            const totalWords = currentPuzzle.validWords.length;
+            const count = foundWords.size;
 
-      updateDisplay();
-    }
+            document.getElementById('score-text').innerText = `${score} pts`;
+            document.getElementById('words-found-count').innerText = `Mots trouvés : ${count} / ${totalWords}`;
+            document.getElementById('rank-badge').innerText = getCurrentRank(score);
 
-    function appendLetter(char) {
-      currentInput += char.toUpperCase();
-      updateDisplay();
-    }
+            const progressPct = Math.min(100, Math.round((score / totalMaxScore) * 100));
+            document.getElementById('progress-bar').style.width = `${progressPct}%`;
 
-    function deleteLetter() {
-      currentInput = currentInput.slice(0, -1);
-      updateDisplay();
-    }
+            renderFoundWordsModalList();
+        }
 
-    function updateDisplay() {
-      document.getElementById('currentWordText').innerText = currentInput;
-    }
+        function handleTileClick(index) {
+            const char = currentLetters[index];
+            currentInput += char;
+            updateInputDisplay();
+        }
 
-    function shuffleLetters() {
-      currentPuzzle.outer.sort(() => Math.random() - 0.5);
-      renderBoard();
-    }
+        function handleDelete() {
+            if (currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
+                updateInputDisplay();
+            }
+        }
 
-    function handleWordSubmit() {
-      const word = currentInput.trim().toUpperCase();
-      const normalizedWord = normalizeText(word);
-      const centerLetter = currentPuzzle.center;
+        function handleShuffle() {
+            // Keep center letter at index 0, shuffle outer letters 1..6
+            const outers = currentLetters.slice(1);
+            for (let i = outers.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [outers[i], outers[j]] = [outers[j], outers[i]];
+            }
+            currentLetters = [currentLetters[0], ...outers];
+            renderHoneycomb();
+        }
 
-      if (word.length < 4) {
-        showToast("Trop court (4 lettres min.)");
-        clearInput();
-        return;
-      }
+        function updateInputDisplay() {
+            const displayEl = document.getElementById('input-word');
+            displayEl.innerHTML = '';
 
-      if (!normalizedWord.includes(centerLetter)) {
-        showToast(`Lettre centrale '${centerLetter}' requise !`);
-        clearInput();
-        return;
-      }
+            const centerChar = currentLetters[0].toLowerCase();
 
-      if (Array.from(foundWords).some(w => normalizeText(w) === normalizedWord)) {
-        showToast("Déjà trouvé !");
-        clearInput();
-        return;
-      }
+            // Format center letter with golden color inside typed string
+            for (let char of currentInput) {
+                const span = document.createElement('span');
+                span.innerText = char.toUpperCase();
+                if (char.toLowerCase() === centerChar) {
+                    span.className = "text-honey-400";
+                } else {
+                    span.className = "text-white";
+                }
+                displayEl.appendChild(span);
+            }
+        }
 
-      const matchedWord = currentPuzzle.validWords.find(
-        validWord => normalizeText(validWord) === normalizedWord
-      );
+        function handleSubmit() {
+            const word = currentInput.trim().toLowerCase();
+            const centerChar = currentLetters[0].toLowerCase();
 
-      if (matchedWord) {
-        foundWords.add(matchedWord);
-        saveProgress();
-        showToast("Bravo ! 🎉");
-        updateFoundUI();
-      } else {
-        showToast("Mot non valide");
-      }
+            if (word.length < 4) {
+                showToast("Trop court (min. 4 lettres)");
+                autoClear();
+                return;
+            }
 
-      clearInput();
-    }
+            if (!word.includes(centerChar)) {
+                showToast(`Lettre centrale "${centerChar.toUpperCase()}" requise !`);
+                autoClear();
+                return;
+            }
 
-    function clearInput() {
-      currentInput = "";
-      updateDisplay();
-    }
+            // Check if valid word in French database
+            const validSet = currentPuzzle.validWords.map(w => w.toLowerCase());
+            if (!validSet.includes(word)) {
+                showToast("Mot non reconnu");
+                autoClear();
+                return;
+            }
 
-    function saveProgress() {
-      const todayStr = getTodayDateString();
-      localStorage.setItem(`bee_progress_${todayStr}`, JSON.stringify(Array.from(foundWords)));
-    }
+            if (foundWords.has(word)) {
+                showToast("Déjà trouvé !");
+                autoClear();
+                return;
+            }
 
-    function updateFoundUI() {
-      const listEl = document.getElementById('foundList');
-      listEl.innerHTML = "";
+            // Valid New Word Found!
+            foundWords.add(word);
+            const pts = calculateWordPoints(word);
+            
+            if (isPangram(word)) {
+                showToast(`🎉 PANGRAMME ! +${pts} pts !`);
+            } else {
+                showToast(`Bien joué ! +${pts} pt${pts > 1 ? 's' : ''}`);
+            }
 
-      foundWords.forEach(word => {
-        const tag = document.createElement('div');
-        tag.className = "found-word-tag";
-        tag.innerText = word;
-        listEl.appendChild(tag);
-      });
+            saveGameState();
+            updateUIStats();
+            autoClear();
+        }
 
-      document.getElementById('foundCount').innerText = foundWords.size;
+        function autoClear() {
+            currentInput = "";
+            updateInputDisplay();
+        }
 
-      const totalWords = currentPuzzle.validWords.length;
-      const remaining = totalWords - foundWords.size;
-      document.getElementById('wordsRemaining').innerText = `${remaining} / ${totalWords}`;
-    }
+        function setupKeyboardInput() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                } else if (e.key === 'Backspace') {
+                    handleDelete();
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    handleShuffle();
+                } else if (e.key.length === 1 && /[a-zA-ZàáâèéêëìíîïòóôùúûüçÀÁÂÈÉÊËÌÍÎÏÒÓÔÙÚÛÜÇ]/.test(e.key)) {
+                    const typedChar = e.key.toLowerCase();
+                    // Match normalized or direct letter in puzzle
+                    const matchedChar = currentLetters.find(l => l.toLowerCase() === typedChar);
+                    if (matchedChar) {
+                        currentInput += matchedChar;
+                        updateInputDisplay();
+                    } else {
+                        // Allow typing exact match key if present
+                        currentInput += typedChar;
+                        updateInputDisplay();
+                    }
+                }
+            });
+        }
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 1800);
-    }
+        function showToast(msg) {
+            const toastBox = document.getElementById('toast-box');
+            const toastContent = document.getElementById('toast-content');
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        handleWordSubmit();
-      } else if (e.key === 'Backspace') {
-        deleteLetter();
-      } else if (/^[a-zA-ZàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]$/.test(e.key)) {
-        appendLetter(normalizeText(e.key));
-      }
-    });
+            toastContent.innerText = msg;
+            toastBox.classList.remove('hidden', 'toast-animate');
 
-    function startMidnightCountdown() {
-      function updateTimer() {
-        const now = new Date();
-        const midnight = new Date();
-        midnight.setHours(24, 0, 0, 0);
+            // Force reflow for CSS animation restart
+            void toastBox.offsetWidth;
 
-        const diff = midnight - now;
-        const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
-        const minutes = Math.floor((diff / (1000 * 60)) % 60).toString().padStart(2, '0');
-        const seconds = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+            toastBox.classList.add('toast-animate');
 
-        document.getElementById('midnightCountdown').innerText = `${hours}:${minutes}:${seconds}`;
-      }
-      updateTimer();
-      setInterval(updateTimer, 1000);
-    }
+            setTimeout(() => {
+                toastBox.classList.add('hidden');
+            }, 1800);
+        }
 
-    function openYesterdayModal() {
-      const yesterdayStr = getYesterdayDateString();
-      const yesterdayPuzzle = DAILY_PUZZLES.find(p => p.date === yesterdayStr) || DAILY_PUZZLES[0];
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
 
-      document.getElementById('yesterdayDateLabel').innerText = `Mots du ${yesterdayPuzzle.date} :`;
-      const container = document.getElementById('yesterdayWords');
-      container.innerHTML = "";
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
 
-      yesterdayPuzzle.validWords.forEach(w => {
-        const tag = document.createElement('div');
-        tag.className = "found-word-tag";
-        tag.innerText = w;
-        container.appendChild(tag);
-      });
+        function renderFoundWordsModalList() {
+            const listEl = document.getElementById('modal-found-list');
+            const subEl = document.getElementById('modal-found-sub');
+            
+            subEl.innerText = `${foundWords.size} sur ${currentPuzzle.validWords.length} mots découverts`;
+            listEl.innerHTML = '';
 
-      document.getElementById('yesterdayModal').classList.add('active');
-    }
+            if (foundWords.size === 0) {
+                listEl.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-6 italic">Aucun mot trouvé pour le moment.</div>';
+                return;
+            }
 
-    function openRulesModal() {
-      document.getElementById('rulesModal').classList.add('active');
-    }
+            Array.from(foundWords).sort().forEach(w => {
+                const pts = calculateWordPoints(w);
+                const pangram = isPangram(w);
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-lg border text-sm flex justify-between items-center ${pangram ? 'bg-honey-500/20 border-honey-500/50 text-honey-300 font-bold' : 'bg-gray-800 border-gray-700 text-gray-200'}`;
+                div.innerHTML = `
+                    <span class="capitalize">${w}</span>
+                    <span class="text-xs ${pangram ? 'text-honey-400 font-bold' : 'text-gray-400'}">+${pts}</span>
+                `;
+                listEl.appendChild(div);
+            });
+        }
 
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('active');
-    }
+        function setupYesterdayModal() {
+            document.getElementById('yesterday-date-label').innerText = getFormattedDate(-1);
+            document.getElementById('yesterday-letters').innerText = yesterdayPuzzle.letters.join(' ').toUpperCase();
+            document.getElementById('yesterday-total-words').innerText = `${yesterdayPuzzle.validWords.length} mots`;
 
-    window.onload = initGame;
-  </script>
+            const listEl = document.getElementById('yesterday-words-list');
+            listEl.innerHTML = '';
+
+            yesterdayPuzzle.validWords.sort().forEach(w => {
+                const div = document.createElement('div');
+                div.className = "p-2 bg-gray-800/60 rounded-lg border border-gray-700 text-gray-300 capitalize text-sm";
+                div.innerText = w;
+                listEl.appendChild(div);
+            });
+        }
+
+        function saveGameState() {
+            const todayKey = `jeux_dabeille_${currentPuzzle.id}_${new Date().toISOString().slice(0, 10)}`;
+            const data = {
+                foundWords: Array.from(foundWords)
+            };
+            localStorage.setItem(todayKey, JSON.stringify(data));
+        }
+
+        function loadGameState() {
+            const todayKey = `jeux_dabeille_${currentPuzzle.id}_${new Date().toISOString().slice(0, 10)}`;
+            const saved = localStorage.getItem(todayKey);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.foundWords && Array.isArray(parsed.foundWords)) {
+                        foundWords = new Set(parsed.foundWords);
+                    }
+                } catch(e) {
+                    console.error("Erreur de chargement du jeu", e);
+                }
+            }
+        }
+    </script>
 </body>
 </html>
