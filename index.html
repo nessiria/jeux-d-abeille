@@ -486,24 +486,32 @@
             if (word.length < 4) {
                 showToast("Trop court (4 lettres min.)");
                 shakeInput();
+                currentWord = "";
+                updateWordDisplay();
                 return;
             }
 
             if (!word.includes(currentPuzzle.centerLetter)) {
                 showToast("Lettre centrale manquante !");
                 shakeInput();
+                currentWord = "";
+                updateWordDisplay();
                 return;
             }
 
             if (foundWords.has(word)) {
                 showToast("Déjà trouvé !");
                 shakeInput();
+                currentWord = "";
+                updateWordDisplay();
                 return;
             }
 
             if (!currentPuzzle.validWordsNormalized.includes(word)) {
                 showToast("Mot non valide");
                 shakeInput();
+                currentWord = "";
+                updateWordDisplay();
                 return;
             }
 
