@@ -400,27 +400,45 @@
         <li>Les lettres peuvent être réutilisées.</li>
         <li>Seuls les <strong>infinitifs</strong> (pas de verbes conjugués), <strong>noms</strong>, <strong>adjectifs</strong> et <strong>adverbes</strong> sont acceptés.</li>
         <li>Les verbes pronominaux s'utilisent sans "se" (ex: LAVER).</li>
-        <li>Saisissez vos mots sans vous soucier des accents (ex: ARRET accepte ARRÊT).</li>
+        <li>Saisissez vos mots sans vous soucier des accents (ex: REALITE ou RÉALITÉ).</li>
       </ul>
       <button class="modal-close" onclick="closeModal('rulesModal')">Compris !</button>
     </div>
   </div>
 
   <script>
-    // Master Dictionary Seed Data (Verbs in Infinitive, Nouns, Adjectives, Adverbs)
     const DAILY_PUZZLES = [
       {
         date: "2026-10-05",
         center: "T",
         outer: ["A", "E", "R", "S", "I", "L"],
         validWords: [
-          "ALERTER", "ALERTE", "ALERTES", "ALITE", "ALITER", "ARRETER", "ARRET", "ARRETS",
-          "ASTER", "ASTRES", "ATELIER", "ATELIERS", "ALERTE", "ETALER", "ETAL", "ETALS",
-          "ETIER", "ETIERS", "ISOLAT", "ISOLATS", "LITER", "LITRE", "LITRES", "LITTEE",
-          "RATELER", "RATELIER", "RATER", "RATE", "RATES", "RELATIF", "RETIRER", "RELIRE",
-          "SATIETE", "STELER", "STEREO", "STERILE", "TAILER", "TALER", "TARTRE", "TERRE",
-          "TERRER", "TESTER", "TEST", "TESTS", "TIRER", "TIRE", "TIRES", "TOILER", "TOILE",
-          "TRAIRE", "TRAITE", "TRAITES", "TRALALA", "TREILLES", "TRIER", "TRIE", "TRIES"
+          "ALERTE", "ALERTER", "ALERTES", "ALITE", "ALITER", "ALITES", "ALTEE", "ALTEES",
+          "ARRET", "ARRETE", "ARRETER", "ARRETES", "ARRETS", "ARTEL", "ARTELS", "ASTER",
+          "ASTERS", "ASTRE", "ASTRES", "ATELIER", "ATELIERS", "ATLAS", "ATRAIL", "ALERTE",
+          "ELIT", "ELITE", "ELITES", "ETAL", "ETALA", "ETALER", "ETALES", "ETALS",
+          "ETIER", "ETIERS", "ETIRA", "ETIRER", "ETIRES", "ETIQUET", "ETRIER", "ETRIERS",
+          "ISOLAT", "ISOLATS", "LAIT", "LAITS", "LAITERIE", "LAITERIES", "LATERALE",
+          "LATERAUX", "LATTE", "LATTES", "LIERAIT", "LISTE", "LISTER", "LISTES",
+          "LITEE", "LITEES", "LITER", "LITRA", "LITRE", "LITRER", "LITRES", "LITTEE",
+          "LITTEES", "RATELER", "RATELIER", "RATELIERS", "RATER", "RATES", "RATIE",
+          "RATIER", "RATIERS", "RATIEZ", "RATION", "RATISSE", "RATISSER", "REALITE",
+          "REALITES", "RELATA", "RELATER", "RELATES", "RELATIF", "RELATIFS", "RELATIVE",
+          "RELATIVES", "RELATISTE", "RELIAIT", "RESTAI", "RESTAR", "RESTE", "RESTER",
+          "RESTES", "RESTIEZ", "RETAPAI", "RETAPAER", "RETAPES", "RETARD", "RETARDS",
+          "RETARDAI", "RETARDER", "RETENIR", "RETENAIS", "RETIRA", "RETIRER", "RETIRES",
+          "RETRAITE", "RETRAITER", "RETRAITES", "RETRECIR", "RETRIE", "SATIETE", "SATIN",
+          "SATINER", "SATINES", "SITTELLE", "SITTELLES", "STALAG", "STELE", "STELES",
+          "STEREO", "STEREOA", "STERILE", "STERILES", "STERILISA", "STERILISER", "STERILITE",
+          "STERILITES", "STERLIN", "TAIL", "TAILA", "TAILER", "TAILEES", "TAILLE",
+          "TAILLER", "TAILLES", "TAILLIS", "TALER", "TALES", "TALON", "TALONNER",
+          "TARAI", "TARER", "TARES", "TARIE", "TARIER", "TARIERE", "TARIERES",
+          "TARIERS", "TARTRE", "TARTRES", "TERRE", "TERREAU", "TERRER", "TERRES",
+          "TERRESTRE", "TERRESTRES", "TEST", "TESTA", "TESTER", "TESTES", "TESTS",
+          "TELETEX", "TIATRE", "TIRAI", "TIRER", "TIRES", "TIRIEZ", "TITRE",
+          "TITRER", "TITRES", "TOILE", "TOILER", "TOILES", "TOILETTE", "TOILETTES",
+          "TRAIRE", "TRAIT", "TRAITE", "TRAITER", "TRAITES", "TRAITS", "TRALALA",
+          "TRATTE", "TREILLE", "TREILLES", "TRIE", "TRIER", "TRIES", "TRIEZ"
         ]
       },
       {
@@ -439,22 +457,14 @@
     let foundWords = new Set();
     let currentInput = "";
 
-    // Normalize text (strips accents: Ê -> E, É -> E, À -> A, Ç -> C)
     function normalizeText(str) {
       return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     }
 
     function initGame() {
       const todayStr = getTodayDateString();
-      
-      // Load or pick puzzle for today
-      currentPuzzle = DAILY_PUZZLES.find(p => p.date === todayStr);
-      if (!currentPuzzle) {
-        // Fallback puzzle generator from template
-        currentPuzzle = DAILY_PUZZLES[0];
-      }
+      currentPuzzle = DAILY_PUZZLES.find(p => p.date === todayStr) || DAILY_PUZZLES[0];
 
-      // Load saved progress for today
       const savedProgress = localStorage.getItem(`bee_progress_${todayStr}`);
       if (savedProgress) {
         foundWords = new Set(JSON.parse(savedProgress));
@@ -513,28 +523,24 @@
       const normalizedWord = normalizeText(word);
       const centerLetter = currentPuzzle.center;
 
-      // Rule Check 1: Length
       if (word.length < 4) {
         showToast("Trop court (4 lettres min.)");
         clearInput();
         return;
       }
 
-      // Rule Check 2: Contains Central Letter
       if (!normalizedWord.includes(centerLetter)) {
         showToast(`Lettre centrale '${centerLetter}' requise !`);
         clearInput();
         return;
       }
 
-      // Rule Check 3: Check if already found
       if (Array.from(foundWords).some(w => normalizeText(w) === normalizedWord)) {
         showToast("Déjà trouvé !");
         clearInput();
         return;
       }
 
-      // Rule Check 4: Dictionary match
       const matchedWord = currentPuzzle.validWords.find(
         validWord => normalizeText(validWord) === normalizedWord
       );
@@ -574,7 +580,6 @@
 
       document.getElementById('foundCount').innerText = foundWords.size;
 
-      // Update Words Remaining Counter
       const totalWords = currentPuzzle.validWords.length;
       const remaining = totalWords - foundWords.size;
       document.getElementById('wordsRemaining').innerText = `${remaining} / ${totalWords}`;
@@ -589,7 +594,6 @@
       }, 1800);
     }
 
-    /* Keyboard Input Handler */
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         handleWordSubmit();
@@ -600,7 +604,6 @@
       }
     });
 
-    /* Midnight Countdown Timer */
     function startMidnightCountdown() {
       function updateTimer() {
         const now = new Date();
@@ -618,7 +621,6 @@
       setInterval(updateTimer, 1000);
     }
 
-    /* Modals */
     function openYesterdayModal() {
       const yesterdayStr = getYesterdayDateString();
       const yesterdayPuzzle = DAILY_PUZZLES.find(p => p.date === yesterdayStr) || DAILY_PUZZLES[0];
@@ -645,7 +647,6 @@
       document.getElementById(id).classList.remove('active');
     }
 
-    // Initialize on load
     window.onload = initGame;
   </script>
 </body>
