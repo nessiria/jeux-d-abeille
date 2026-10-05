@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruche des Mots - Jeu de Léxique Français</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .font-fredoka {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+
+        /* Hexagonal Grid Styling */
+        .hex-grid {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto;
+        }
+
+        .hex-cell {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            cursor: pointer;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+
+        .hex-cell:hover {
+            transform: scale(1.06);
+            z-index: 10;
+        }
+
+        .hex-cell:active {
+            transform: scale(0.95);
+        }
+
+        .hex-shape {
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.85rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .hex-center .hex-shape {
+            background-color: #f59e0b;
+            color: #ffffff;
+        }
+
+        .hex-outer .hex-shape {
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .dark .hex-outer .hex-shape {
+            background-color: #374151;
+            color: #f9fafb;
+        }
+
+        /* Hex Positions */
+        .pos-0 { top: 94px; left: 100px; } /* Center */
+        .pos-1 { top: 15px; left: 100px; }
+        .pos-2 { top: 54px; left: 168px; }
+        .pos-3 { top: 134px; left: 168px; }
+        .pos-4 { top: 173px; left: 100px; }
+        .pos-5 { top: 134px; left: 32px; }
+        .pos-6 { top: 54px; left: 32px; }
+
+        /* Custom Scrollbar for found words */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-amber-50/50 text-slate-800 min-h-screen flex flex-col justify-between dark:bg-slate-900 dark:text-slate-100 transition-colors">
+
+    <!-- Header -->
+    <header class="border-b border-amber-200/60 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-3xl">🐝</span>
+                <div>
+                    <h1 class="text-xl font-black font-fredoka leading-none bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text text-transparent">
+                        Ruche des Mots
+                    </h1>
+                    <p id="dateBadge" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5"></p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button id="yesterdayBtn" class="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-slate-800 hover:bg-amber-200 dark:hover:bg-slate-700 text-amber-900 dark:text-amber-300 font-semibold text-xs transition flex items-center gap-1">
+                    <span>📅</span>
+                    <span class="hidden sm:inline">Solutions d'hier</span>
+                </button>
+                <button id="rulesBtn" class="p-2 rounded-full hover:bg-amber-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition" title="Règles du jeu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-amber-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition" title="Thème">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-4 flex-grow flex flex-col md:flex-row gap-6 items-center md:items-start justify-center">
+        
+        <!-- Left Side: Game Grid & Controls -->
+        <section class="w-full md:w-1/2 flex flex-col items-center max-w-sm">
+            
+            <!-- Rank, Score Bar & Remaining Words Counter -->
+            <div class="w-full bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-amber-100 dark:border-slate-700 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span id="rankBadge" class="font-bold text-amber-600 dark:text-amber-400 font-fredoka text-lg">Débutant</span>
+                    <span id="scoreDisplay" class="text-sm font-bold bg-amber-100 dark:bg-slate-700 text-amber-900 dark:text-amber-300 px-3 py-1 rounded-full">0 pts</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                    <div id="progressBar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+
+                <!-- Remaining Words & Countdown Info -->
+                <div class="flex justify-between items-center pt-1 border-t border-slate-100 dark:border-slate-700/50 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                        <span>⏳ Mots restants :</span>
+                        <span id="remainingCount" class="text-amber-600 dark:text-amber-400 font-bold">--</span>
+                    </div>
+                    <div class="flex items-center gap-1" title="Prochaine grille à minuit">
+                        <span>🌙 Minuit dans :</span>
+                        <span id="midnightTimer" class="font-mono font-medium text-slate-600 dark:text-slate-300">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast / Feedback Message -->
+            <div id="toast" class="h-8 my-1 flex items-center justify-center font-bold text-amber-700 dark:text-amber-300 text-sm transition-opacity opacity-0"></div>
+
+            <!-- Word Input Display -->
+            <div id="inputBox" class="h-12 w-full flex items-center justify-center font-bold text-3xl tracking-widest uppercase mb-2 text-slate-800 dark:text-slate-100 border-b-2 border-amber-400 min-h-[48px]">
+                <span id="currentWord"></span>
+                <span class="animate-pulse text-amber-500">|</span>
+            </div>
+
+            <!-- Honeycomb Hex Board -->
+            <div class="hex-grid my-2" id="hexGrid">
+                <div class="hex-cell hex-center pos-0" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-1" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-2" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-3" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-4" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-5" data-letter=""><div class="hex-shape"></div></div>
+                <div class="hex-cell hex-outer pos-6" data-letter=""><div class="hex-shape"></div></div>
+            </div>
+
+            <!-- Controls (Actions) -->
+            <div class="flex items-center justify-center gap-3 w-full mt-4">
+                <button id="deleteBtn" class="px-5 py-3 rounded-full border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-700 dark:text-slate-200 transition active:scale-95">
+                    Effacer
+                </button>
+                <button id="shuffleBtn" class="p-3 rounded-full border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition active:scale-95" title="Mélanger">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+                <button id="enterBtn" class="px-6 py-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition shadow-md hover:shadow-lg active:scale-95">
+                    Valider
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Right Side: Found Words List -->
+        <section class="w-full md:w-1/2 max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-amber-100 dark:border-slate-700 flex flex-col h-[440px]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700 mb-3">
+                <h2 class="font-bold font-fredoka text-lg text-slate-800 dark:text-slate-100">
+                    Mots trouvés (<span id="foundCount">0</span>)
+                </h2>
+                <span id="panagramBadge" class="hidden text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-semibold px-2 py-0.5 rounded-full">
+                    Panagramme ! 🏆
+                </span>
+            </div>
+
+            <div id="foundWordsList" class="custom-scrollbar overflow-y-auto flex-grow grid grid-cols-2 gap-2 content-start text-sm">
+                <p id="emptyWordsNotice" class="col-span-2 text-center text-slate-400 py-12 italic">
+                    Trouvez des mots d'au moins 4 lettres contenant la lettre centrale.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rules Modal -->
+    <div id="rulesModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold font-fredoka text-amber-600 dark:text-amber-400">Règles du jeu 🐝</h3>
+                <button id="closeRulesBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold">✕</button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>• Créez des mots de <strong>4 lettres ou plus</strong>.</p>
+                <p>• Doivent obligatoirement inclure la <strong>lettre centrale</strong> (jaune).</p>
+                <p>• Les lettres peuvent être réutilisées plusieurs fois.</p>
+                <hr class="border-slate-200 dark:border-slate-700 my-2">
+                <p class="font-semibold text-slate-800 dark:text-slate-100">Lexique français autorisé :</p>
+                <ul class="list-disc pl-5 space-y-1 text-xs">
+                    <li>Verbes à l'<strong>infinitif</strong> uniquement (pas de formes conjuguées).</li>
+                    <li>Noms communs (masculins et féminins).</li>
+                    <li>Adjectifs et Adverbes.</li>
+                    <li>Pour les verbes pronominaux (ex: <i>se laver</i>), entrez simplement le verbe (<i>LAVER</i>).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yesterday's Answers Modal -->
+    <div id="yesterdayModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-amber-100 dark:border-slate-700 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700 mb-3">
+                <div>
+                    <h3 class="text-xl font-bold font-fredoka text-amber-600 dark:text-amber-400">Solutions d'hier 📅</h3>
+                    <p id="yesterdayDateLabel" class="text-xs text-slate-400"></p>
+                </div>
+                <button id="closeYesterdayBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold">✕</button>
+            </div>
+            <div id="yesterdayWordsContent" class="custom-scrollbar overflow-y-auto flex-grow space-y-3">
+                <!-- Populated dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* French Puzzles Pool */
+        const PUZZLE_POOL = [
+            {
+                centerLetter: "A",
+                outerLetters: ["R", "T", "E", "L", "C", "U"],
+                validWords: [
+                    "ACTEUR", "ACTEURS", "ACTE", "ARTE", "AUTEUR", "AUTEURS", 
+                    "CALER", "CARTE", "CARTEL", "CARTAL", "CATER", "CALE", "CALUT", 
+                    "CLAT", "CLATER", "ECLAT", "ECLATER", "ECARTE", "ECARTER", 
+                    "LACE", "LACER", "LACET", "LATER", "LATEUR", "LAVE", "LAVER",
+                    "RACE", "RATE", "RATER", "RATURE", "RATURER", "RALT", "RACLE", "RACLER",
+                    "TALC", "TARE", "TARER", "TARTE", "TALER", "TRACE", "TRACER",
+                    "ULTRA", "UREE", "ARCUAT", "CARA"
+                ],
+                pangrams: ["ECLATER", "CARTEL"]
+            },
+            {
+                centerLetter: "E",
+                outerLetters: ["N", "O", "U", "R", "T", "S"],
+                validWords: [
+                    "ENTER", "ENTRER", "ENTREE", "ENOUER", "Etonner", "EURO", "EUROS",
+                    "ROUE", "ROUER", "ROUET", "ROUTIER", "RESTO", "ROSE", "ROSER",
+                    "SENTIR", "SENTIER", "SERRER", "SERENITE", "SURET", "SURETE", 
+                    "TENOR", "TENUE", "TENEUR", "TENIR", "TORSE", "TOURNER", "TOURNEE",
+                    "TUBE", "TUBER", "TUER", "TUEUR", "TOUER", "TRENTE"
+                ],
+                pangrams: ["TOURNER", "ENTRER"]
+            },
+            {
+                centerLetter: "I",
+                outerLetters: ["C", "H", "N", "O", "T", "R"],
+                validWords: [
+                    "CITRON", "CITRIN", "COIN", "COINCER", "COINCH", "CRIN", 
+                    "INCH", "OIN", "OINCT", "RICIN", "ROCHIN", "TRIC", "TRICOT", 
+                    "TRICOTER", "TRINOME", "TROCHIN", "CHINON", "CHINOIS", "NICHE", 
+                    "NICHER", "NICOIS", "RITCHI"
+                ],
+                pangrams: ["TRICOTER"]
+            },
+            {
+                centerLetter: "O",
+                outerLetters: ["P", "L", "M", "E", "R", "S"],
+                validWords: [
+                    "MOLE", "MOLER", "MOME", "MOROSE", "MORE", "OMELETTE", "OPERA",
+                    "OPERER", "OPERAS", "POLE", "POMME", "POMMER", "PROSE", "PROSER",
+                    "ROSE", "ROSER", "ROLE", "ROLES", "SOLE", "SOLEIL", "SOMME", "SOMMER"
+                ],
+                pangrams: ["OMELETTE", "OPERER"]
+            }
+        ];
+
+        // Ranks setup (French UI)
+        const RANKS = [
+            { name: "Débutant", minPct: 0 },
+            { name: "Élémentaire", minPct: 0.05 },
+            { name: "Bon", minPct: 0.15 },
+            { name: "Très Bon", minPct: 0.25 },
+            { name: "Excellent", minPct: 0.40 },
+            { name: "Remarquable", minPct: 0.60 },
+            { name: "Génie 🧠", minPct: 0.80 }
+        ];
+
+        // Game State
+        let currentPuzzle = null;
+        let todayDateStr = "";
+        let currentWord = "";
+        let foundWords = new Set();
+        let score = 0;
+        let maxPossibleScore = 0;
+
+        // Date helper (YYYY-MM-DD)
+        function getFormattedDate(dateObj = new Date()) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Deterministic puzzle selector based on date string
+        function getPuzzleForDate(dateStr) {
+            let hash = 0;
+            for (let i = 0; i < dateStr.length; i++) {
+                hash = dateStr.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % PUZZLE_POOL.length;
+            const p = PUZZLE_POOL[index];
+            
+            return {
+                ...p,
+                validWordsNormalized: p.validWords.map(w => normalizeText(w)),
+                pangramsNormalized: p.pangrams.map(w => normalizeText(w))
+            };
+        }
+
+        // Accent normalizer helper function
+        function normalizeText(text) {
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        }
+
+        // DOM elements
+        const hexGrid = document.getElementById("hexGrid");
+        const currentWordEl = document.getElementById("currentWord");
+        const foundWordsList = document.getElementById("foundWordsList");
+        const emptyWordsNotice = document.getElementById("emptyWordsNotice");
+        const foundCountEl = document.getElementById("foundCount");
+        const scoreDisplay = document.getElementById("scoreDisplay");
+        const rankBadge = document.getElementById("rankBadge");
+        const progressBar = document.getElementById("progressBar");
+        const remainingCountEl = document.getElementById("remainingCount");
+        const midnightTimerEl = document.getElementById("midnightTimer");
+        const toastEl = document.getElementById("toast");
+        const panagramBadge = document.getElementById("panagramBadge");
+        const dateBadge = document.getElementById("dateBadge");
+
+        function initDailyGame() {
+            todayDateStr = getFormattedDate();
+            dateBadge.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'short', month: 'short', day: 'numeric' });
+            
+            currentPuzzle = getPuzzleForDate(todayDateStr);
+
+            // Calculate max score
+            maxPossibleScore = currentPuzzle.validWordsNormalized.reduce((acc, word) => {
+                let pts = word.length === 4 ? 1 : word.length;
+                if (currentPuzzle.pangramsNormalized.includes(word)) pts += 7;
+                return acc + pts;
+            }, 0);
+
+            // Restore today's progress from LocalStorage
+            const savedState = localStorage.getItem(`hive_game_${todayDateStr}`);
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    foundWords = new Set(parsed.foundWords || []);
+                    score = parsed.score || 0;
+                } catch (e) {
+                    foundWords = new Set();
+                    score = 0;
+                }
+            } else {
+                foundWords = new Set();
+                score = 0;
+            }
+
+            renderHexGrid();
+            updateUI();
+            startMidnightTimer();
+        }
+
+        function saveProgress() {
+            const data = {
+                foundWords: Array.from(foundWords),
+                score: score
+            };
+            localStorage.setItem(`hive_game_${todayDateStr}`, JSON.stringify(data));
+        }
+
+        function renderHexGrid() {
+            const cells = hexGrid.querySelectorAll(".hex-cell");
+            
+            // Center cell
+            const centerCell = cells[0];
+            centerCell.dataset.letter = currentPuzzle.centerLetter;
+            centerCell.querySelector(".hex-shape").textContent = currentPuzzle.centerLetter;
+
+            // Outer cells
+            currentPuzzle.outerLetters.forEach((letter, i) => {
+                const cell = cells[i + 1];
+                cell.dataset.letter = letter;
+                cell.querySelector(".hex-shape").textContent = letter;
+            });
+        }
+
+        function handleLetterInput(letter) {
+            const cleanLetter = normalizeText(letter);
+            const allAllowedLetters = [currentPuzzle.centerLetter, ...currentPuzzle.outerLetters];
+            
+            if (allAllowedLetters.includes(cleanLetter)) {
+                currentWord += cleanLetter;
+                updateWordDisplay();
+            }
+        }
+
+        function handleDelete() {
+            if (currentWord.length > 0) {
+                currentWord = currentWord.slice(0, -1);
+                updateWordDisplay();
+            }
+        }
+
+        function handleShuffle() {
+            currentPuzzle.outerLetters.sort(() => Math.random() - 0.5);
+            renderHexGrid();
+        }
+
+        function showToast(msg, duration = 1800) {
+            toastEl.textContent = msg;
+            toastEl.classList.remove("opacity-0");
+            setTimeout(() => {
+                toastEl.classList.add("opacity-0");
+            }, duration);
+        }
+
+        function handleWordSubmit() {
+            const word = currentWord.trim();
+
+            if (word.length < 4) {
+                showToast("Trop court (4 lettres min.)");
+                shakeInput();
+                return;
+            }
+
+            if (!word.includes(currentPuzzle.centerLetter)) {
+                showToast("Lettre centrale manquante !");
+                shakeInput();
+                return;
+            }
+
+            if (foundWords.has(word)) {
+                showToast("Déjà trouvé !");
+                shakeInput();
+                return;
+            }
+
+            if (!currentPuzzle.validWordsNormalized.includes(word)) {
+                showToast("Mot non valide");
+                shakeInput();
+                return;
+            }
+
+            // Word is VALID
+            let points = word.length === 4 ? 1 : word.length;
+            const isPangram = currentPuzzle.pangramsNormalized.includes(word);
+            
+            if (isPangram) {
+                points += 7;
+                showToast("PANAGRAMME ! 🏆 (+7 pts)");
+                panagramBadge.classList.remove("hidden");
+            } else {
+                showToast(`+${points} pt${points > 1 ? 's' : ''} !`);
+            }
+
+            foundWords.add(word);
+            score += points;
+            currentWord = "";
+            
+            saveProgress();
+            updateWordDisplay();
+            updateUI();
+        }
+
+        function shakeInput() {
+            const inputBox = document.getElementById("inputBox");
+            inputBox.classList.add("animate-shake");
+            setTimeout(() => inputBox.classList.remove("animate-shake"), 400);
+        }
+
+        function updateWordDisplay() {
+            currentWordEl.textContent = currentWord;
+        }
+
+        function updateUI() {
+            // Update found list & remaining words counter
+            const totalWordsCount = currentPuzzle.validWordsNormalized.length;
+            const remainingCount = totalWordsCount - foundWords.size;
+
+            foundCountEl.textContent = foundWords.size;
+            scoreDisplay.textContent = `${score} pts`;
+            remainingCountEl.textContent = `${remainingCount} / ${totalWordsCount}`;
+
+            if (foundWords.size > 0) {
+                emptyWordsNotice.style.display = "none";
+            } else {
+                emptyWordsNotice.style.display = "block";
+            }
+
+            foundWordsList.innerHTML = "";
+            Array.from(foundWords).reverse().forEach(word => {
+                const isPangram = currentPuzzle.pangramsNormalized.includes(word);
+                const tag = document.createElement("div");
+                tag.className = `px-3 py-1.5 rounded-xl font-semibold flex items-center justify-between text-xs ${
+                    isPangram 
+                    ? "bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200" 
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                }`;
+                tag.innerHTML = `<span>${word}</span> ${isPangram ? '⭐' : ''}`;
+                foundWordsList.appendChild(tag);
+            });
+
+            // Update Progress Bar & Rank
+            const pct = maxPossibleScore > 0 ? score / maxPossibleScore : 0;
+            progressBar.style.width = `${Math.min(100, Math.round(pct * 100))}%`;
+
+            let currentRank = RANKS[0].name;
+            for (let i = RANKS.length - 1; i >= 0; i--) {
+                if (pct >= RANKS[i].minPct) {
+                    currentRank = RANKS[i].name;
+                    break;
+                }
+            }
+            rankBadge.textContent = currentRank;
+        }
+
+        function startMidnightTimer() {
+            function tick() {
+                const now = new Date();
+                const midnight = new Date(now);
+                midnight.setHours(24, 0, 0, 0);
+
+                const diff = midnight - now;
+
+                if (diff <= 0) {
+                    // Date changed, reload puzzle!
+                    initDailyGame();
+                    return;
+                }
+
+                const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+                const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
+                const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+
+                midnightTimerEl.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        function renderYesterdayAnswers() {
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterdayStr = getFormattedDate(yesterdayDate);
+
+            const yesterdayPuzzle = getPuzzleForDate(yesterdayStr);
+            const yesterdayLabel = document.getElementById("yesterdayDateLabel");
+            const contentBox = document.getElementById("yesterdayWordsContent");
+
+            yesterdayLabel.textContent = `Grille du ${yesterdayDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+            contentBox.innerHTML = "";
+
+            const wordsList = yesterdayPuzzle.validWords;
+            
+            const infoText = document.createElement("p");
+            infoText.className = "text-xs text-slate-500 mb-2";
+            infoText.textContent = `Total : ${wordsList.length} mots disponibles dans la grille d'hier.`;
+            contentBox.appendChild(infoText);
+
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-2 gap-2 text-xs font-semibold";
+
+            wordsList.forEach(w => {
+                const norm = normalizeText(w);
+                const isPan = yesterdayPuzzle.pangramsNormalized.includes(norm);
+                const item = document.createElement("div");
+                item.className = `p-2 rounded-lg flex items-center justify-between ${
+                    isPan ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                }`;
+                item.innerHTML = `<span>${w}</span> ${isPan ? '🏆' : ''}`;
+                grid.appendChild(item);
+            });
+
+            contentBox.appendChild(grid);
+        }
+
+        // Hex click events
+        hexGrid.addEventListener("click", (e) => {
+            const cell = e.target.closest(".hex-cell");
+            if (cell && cell.dataset.letter) {
+                handleLetterInput(cell.dataset.letter);
+            }
+        });
+
+        // Event listeners
+        document.getElementById("deleteBtn").addEventListener("click", handleDelete);
+        document.getElementById("shuffleBtn").addEventListener("click", handleShuffle);
+        document.getElementById("enterBtn").addEventListener("click", handleWordSubmit);
+
+        // Keyboard support
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                handleWordSubmit();
+            } else if (e.key === "Backspace") {
+                handleDelete();
+            } else if (e.key === " ") {
+                e.preventDefault();
+                handleShuffle();
+            } else if (/^[a-zA-ZàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]$/.test(e.key)) {
+                handleLetterInput(e.key);
+            }
+        });
+
+        // Modal triggers
+        const rulesModal = document.getElementById("rulesModal");
+        document.getElementById("rulesBtn").addEventListener("click", () => {
+            rulesModal.classList.remove("hidden");
+            rulesModal.classList.add("flex");
+        });
+        document.getElementById("closeRulesBtn").addEventListener("click", () => {
+            rulesModal.classList.add("hidden");
+            rulesModal.classList.remove("flex");
+        });
+
+        const yesterdayModal = document.getElementById("yesterdayModal");
+        document.getElementById("yesterdayBtn").addEventListener("click", () => {
+            renderYesterdayAnswers();
+            yesterdayModal.classList.remove("hidden");
+            yesterdayModal.classList.add("flex");
+        });
+        document.getElementById("closeYesterdayBtn").addEventListener("click", () => {
+            yesterdayModal.classList.add("hidden");
+            yesterdayModal.classList.remove("flex");
+        });
+
+        // Theme Toggle
+        document.getElementById("themeToggle").addEventListener("click", () => {
+            document.documentElement.classList.toggle("dark");
+        });
+
+        // Initialize on load
+        window.onload = function() {
+            initDailyGame();
+        };
+    </script>
+</body>
+</html>
