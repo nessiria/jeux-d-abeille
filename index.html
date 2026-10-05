@@ -216,7 +216,7 @@
       background-color: #333;
     }
 
-    /* Message / Feedback */
+    /* Toast Notification */
     .message-toast {
       position: fixed;
       top: 80px;
@@ -238,7 +238,7 @@
       transform: translateY(0);
     }
 
-    /* Found Words Drawer */
+    /* Found Words Section */
     .found-section {
       width: 100%;
       max-width: 500px;
@@ -368,7 +368,7 @@
 
   <div class="controls">
     <button class="btn-action" onclick="deleteLetter()">Effacer</button>
-    <button class="btn-action" onclick="shuffleLetters()">Melanger 🔀</button>
+    <button class="btn-action" onclick="shuffleLetters()">Mélanger 🔀</button>
     <button class="btn-action btn-submit" onclick="handleWordSubmit()">Vérifier</button>
   </div>
 
@@ -395,11 +395,11 @@
     <div class="modal-card">
       <div class="modal-title">Règles du jeu</div>
       <ul style="padding-left: 20px; line-height: 1.6; font-size: 0.9rem;">
-        <li>Créez des mots français de <strong>4 lettres ou plus</strong>.</li>
+        <li>Créez des mots courants en français de <strong>4 lettres ou plus</strong>.</li>
         <li>Chaque mot doit contenir la <strong>lettre centrale jaune</strong>.</li>
         <li>Les lettres peuvent être réutilisées.</li>
-        <li>Seuls les <strong>infinitifs</strong> (pas de verbes conjugués), <strong>noms</strong>, <strong>adjectifs</strong> et <strong>adverbes</strong> sont acceptés.</li>
-        <li>Les verbes pronominaux s'utilisent sans "se" (ex: LAVER).</li>
+        <li>Pas de verbes conjugués (seuls les <strong>infinitifs</strong> sont acceptés).</li>
+        <li>Les mots techniques, le vocabulaire d'argot et les termes inappropriés sont exclus.</li>
         <li>Saisissez vos mots sans vous soucier des accents (ex: REALITE ou RÉALITÉ).</li>
       </ul>
       <button class="modal-close" onclick="closeModal('rulesModal')">Compris !</button>
@@ -407,38 +407,23 @@
   </div>
 
   <script>
+    // Strictly curated daily puzzles using standard, common, non-technical French words
     const DAILY_PUZZLES = [
       {
         date: "2026-10-05",
         center: "T",
         outer: ["A", "E", "R", "S", "I", "L"],
         validWords: [
-          "ALERTE", "ALERTER", "ALERTES", "ALITE", "ALITER", "ALITES", "ALTEE", "ALTEES",
-          "ARRET", "ARRETE", "ARRETER", "ARRETES", "ARRETS", "ARTEL", "ARTELS", "ASTER",
-          "ASTERS", "ASTRE", "ASTRES", "ATELIER", "ATELIERS", "ATLAS", "ATRAIL", "ALERTE",
-          "ELIT", "ELITE", "ELITES", "ETAL", "ETALA", "ETALER", "ETALES", "ETALS",
-          "ETIER", "ETIERS", "ETIRA", "ETIRER", "ETIRES", "ETIQUET", "ETRIER", "ETRIERS",
-          "ISOLAT", "ISOLATS", "LAIT", "LAITS", "LAITERIE", "LAITERIES", "LATERALE",
-          "LATERAUX", "LATTE", "LATTES", "LIERAIT", "LISTE", "LISTER", "LISTES",
-          "LITEE", "LITEES", "LITER", "LITRA", "LITRE", "LITRER", "LITRES", "LITTEE",
-          "LITTEES", "RATELER", "RATELIER", "RATELIERS", "RATER", "RATES", "RATIE",
-          "RATIER", "RATIERS", "RATIEZ", "RATION", "RATISSE", "RATISSER", "REALITE",
-          "REALITES", "RELATA", "RELATER", "RELATES", "RELATIF", "RELATIFS", "RELATIVE",
-          "RELATIVES", "RELATISTE", "RELIAIT", "RESTAI", "RESTAR", "RESTE", "RESTER",
-          "RESTES", "RESTIEZ", "RETAPAI", "RETAPAER", "RETAPES", "RETARD", "RETARDS",
-          "RETARDAI", "RETARDER", "RETENIR", "RETENAIS", "RETIRA", "RETIRER", "RETIRES",
-          "RETRAITE", "RETRAITER", "RETRAITES", "RETRECIR", "RETRIE", "SATIETE", "SATIN",
-          "SATINER", "SATINES", "SITTELLE", "SITTELLES", "STALAG", "STELE", "STELES",
-          "STEREO", "STEREOA", "STERILE", "STERILES", "STERILISA", "STERILISER", "STERILITE",
-          "STERILITES", "STERLIN", "TAIL", "TAILA", "TAILER", "TAILEES", "TAILLE",
-          "TAILLER", "TAILLES", "TAILLIS", "TALER", "TALES", "TALON", "TALONNER",
-          "TARAI", "TARER", "TARES", "TARIE", "TARIER", "TARIERE", "TARIERES",
-          "TARIERS", "TARTRE", "TARTRES", "TERRE", "TERREAU", "TERRER", "TERRES",
-          "TERRESTRE", "TERRESTRES", "TEST", "TESTA", "TESTER", "TESTES", "TESTS",
-          "TELETEX", "TIATRE", "TIRAI", "TIRER", "TIRES", "TIRIEZ", "TITRE",
-          "TITRER", "TITRES", "TOILE", "TOILER", "TOILES", "TOILETTE", "TOILETTES",
-          "TRAIRE", "TRAIT", "TRAITE", "TRAITER", "TRAITES", "TRAITS", "TRALALA",
-          "TRATTE", "TREILLE", "TREILLES", "TRIE", "TRIER", "TRIES", "TRIEZ"
+          "ALERTE", "ALERTER", "ALERTES", "ALITER", "ARRET", "ARRETER",
+          "ARRETS", "ASTRE", "ASTRES", "ATELIER", "ATELIERS", "ELITE",
+          "ELITES", "ETAL", "ETALER", "ETALES", "ETIRER", "ETIRES",
+          "ETRIER", "ETRIERS", "LAIT", "LAITS", "LISTE", "LISTER",
+          "LISTES", "LITRE", "LITRES", "RATER", "RATES", "REALITE",
+          "REALITES", "RESTER", "RESTES", "RETIRER", "RETIRES", "RETRAITE",
+          "RETRAITER", "RETRAITES", "STELE", "STELES", "TAILLER", "TAILLES",
+          "TERRE", "TERRES", "TEST", "TESTER", "TESTS", "TITRE",
+          "TITRER", "TITRES", "TOILE", "TOILES", "TOILETTE", "TOILETTES",
+          "TRAIT", "TRAITE", "TRAITER", "TRAITES", "TRAITS", "TRIER", "TRIES"
         ]
       },
       {
@@ -446,9 +431,10 @@
         center: "E",
         outer: ["C", "H", "R", "A", "M", "S"],
         validWords: [
-          "CACHE", "CACHER", "CACHES", "CHARME", "CHARMER", "CHARMES", "CHERCHE",
-          "CHERCHER", "CREME", "CREMER", "CREMES", "MARCHE", "MARCHER", "MARCHES",
-          "MARECHAL", "MECHE", "MECHES", "RECHERCHE", "RECHERCHER", "SECHER", "SECHE"
+          "CACHE", "CACHER", "CACHES", "CHARME", "CHARMER", "CHARMES",
+          "CHERCHE", "CHERCHER", "CREME", "CREMES", "MARCHE", "MARCHER",
+          "MARCHES", "MARECHAL", "MECHE", "MECHES", "RECHERCHE",
+          "RECHERCHER", "SECHER", "SECHE"
         ]
       }
     ];
